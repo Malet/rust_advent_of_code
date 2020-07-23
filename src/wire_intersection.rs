@@ -6,7 +6,7 @@ use std::iter::FromIterator;
 mod tests {
   use super::{
     calculate_overlap, calculate_path_length, closest_wire_intersection, generate_wire_path, parse,
-    Direction, Instruction,
+    shortest_overall_wire_intersection, Direction, Instruction,
   };
   use std::collections::HashSet;
   use std::iter::FromIterator;
@@ -35,6 +35,24 @@ mod tests {
     // .+-X-. (2,-1)
     // ...|..
     assert_eq!(Some(3), closest_wire_intersection("D1,R3", "U1,R2,D3"))
+  }
+
+  #[test]
+  fn shortest_overall_wire_intersection_from_programn() {
+    assert_eq!(
+      Some(610),
+      shortest_overall_wire_intersection(
+        "R75,D30,R83,U83,L12,D49,R71,U7,L72",
+        "U62,R66,U55,R34,D71,R55,D58,R83"
+      )
+    );
+    assert_eq!(
+      Some(410),
+      shortest_overall_wire_intersection(
+        "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
+        "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
+      )
+    )
   }
 
   #[test]
@@ -127,6 +145,28 @@ pub fn closest_wire_intersection(program_a: &str, program_b: &str) -> Option<u64
     Some(distance_b) => Some(cmp::min(distance_a, distance_b)),
     None => Some(distance_a),
   })
+}
+
+pub fn shortest_overall_wire_intersection(program_a: &str, program_b: &str) -> Option<u64> {
+  let path_a = generate_wire_path(parse(program_a));
+  let path_b = generate_wire_path(parse(program_b));
+  calculate_overlap(path_a.clone(), path_b.clone())
+    .into_iter()
+    .map(|location| {
+      let index_a = path_a
+        .iter()
+        .position(|loc| *loc == location)
+        .expect("Location should exist in path") as u64;
+      let index_b = path_b
+        .iter()
+        .position(|loc| *loc == location)
+        .expect("Location should exist in path") as u64;
+      index_a + index_b
+    })
+    .fold(None, |acc, distance_a| match acc {
+      Some(distance_b) => Some(cmp::min(distance_a, distance_b)),
+      None => Some(distance_a),
+    })
 }
 
 pub fn generate_wire_path(instructions: Vec<Instruction>) -> Vec<(i64, i64)> {
